@@ -1,0 +1,262 @@
+<html>
+<head>
+<title>main.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6897bb;}
+.s4 { color: #6a8759;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+main.py</font>
+</center></td></tr></table>
+<pre><span class="s0">#imports</span>
+<span class="s2">from </span><span class="s1">_ast </span><span class="s2">import </span><span class="s1">Lambda</span>
+
+<span class="s2">import </span><span class="s1">pygame</span>
+<span class="s2">import </span><span class="s1">math</span>
+<span class="s2">from </span><span class="s1">queue </span><span class="s2">import </span><span class="s1">PriorityQueue</span>
+
+<span class="s0">#window set up</span>
+<span class="s1">STD_WIDTH = </span><span class="s3">1000</span>
+<span class="s1">WIN = pygame.display.set_mode((STD_WIDTH</span><span class="s2">, </span><span class="s1">STD_WIDTH))</span>
+<span class="s1">pygame.display.set_caption(</span><span class="s4">&quot;A* Visualizer&quot;</span><span class="s1">)</span>
+
+<span class="s0">#Colors</span>
+<span class="s1">RED = (</span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">GREEN = (</span><span class="s3">0</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">BLUE = (</span><span class="s3">0</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s3">255</span><span class="s1">)</span>
+<span class="s1">YELLOW = (</span><span class="s3">255</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">WHITE = (</span><span class="s3">255</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">255</span><span class="s1">)</span>
+<span class="s1">BLACK = (</span><span class="s3">0</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">PURPLE = (</span><span class="s3">128</span><span class="s2">, </span><span class="s3">0</span><span class="s2">, </span><span class="s3">128</span><span class="s1">)</span>
+<span class="s1">ORANGE = (</span><span class="s3">255</span><span class="s2">, </span><span class="s3">165</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">GREY = (</span><span class="s3">128</span><span class="s2">, </span><span class="s3">128</span><span class="s2">, </span><span class="s3">128</span><span class="s1">)</span>
+<span class="s1">CYAN = (</span><span class="s3">64</span><span class="s2">, </span><span class="s3">224</span><span class="s2">, </span><span class="s3">208</span><span class="s1">)</span>
+
+<span class="s2">class </span><span class="s1">Square:</span>
+    <span class="s2">def </span><span class="s1">__init__(self</span><span class="s2">, </span><span class="s1">row</span><span class="s2">, </span><span class="s1">col</span><span class="s2">, </span><span class="s1">width</span><span class="s2">, </span><span class="s1">row_num):</span>
+        <span class="s1">self.row = row</span>
+        <span class="s1">self.col = col</span>
+        <span class="s1">self.x = row * width</span>
+        <span class="s1">self.y = col * width</span>
+        <span class="s1">self.color = BLACK</span>
+        <span class="s1">self.neighbors = []</span>
+        <span class="s1">self.width = width</span>
+        <span class="s1">self.row_num = row_num</span>
+
+    <span class="s2">def </span><span class="s1">get_pos(self):</span>
+        <span class="s2">return </span><span class="s1">self.row</span><span class="s2">, </span><span class="s1">self.col</span>
+
+    <span class="s2">def </span><span class="s1">is_closed(self):</span>
+        <span class="s2">return </span><span class="s1">self.color == RED</span>
+
+    <span class="s2">def </span><span class="s1">is_open(self):</span>
+        <span class="s2">return </span><span class="s1">self.color == GREEN</span>
+
+    <span class="s2">def </span><span class="s1">is_wall(self):</span>
+        <span class="s2">return </span><span class="s1">self.color == WHITE</span>
+
+    <span class="s2">def </span><span class="s1">is_start(self):</span>
+        <span class="s2">return </span><span class="s1">self.color == ORANGE</span>
+
+    <span class="s2">def </span><span class="s1">is_goal(self):</span>
+        <span class="s2">return </span><span class="s1">self.color == CYAN</span>
+
+    <span class="s2">def </span><span class="s1">restart(self):</span>
+        <span class="s1">self.color = BLACK</span>
+
+    <span class="s2">def </span><span class="s1">make_start(self):</span>
+        <span class="s1">self.color = ORANGE</span>
+
+    <span class="s2">def </span><span class="s1">close(self):</span>
+        <span class="s1">self.color = RED</span>
+
+    <span class="s2">def </span><span class="s1">open(self):</span>
+        <span class="s1">self.color = GREEN</span>
+
+    <span class="s2">def </span><span class="s1">build_wall(self):</span>
+        <span class="s1">self.color = WHITE</span>
+
+    <span class="s2">def </span><span class="s1">make_end(self):</span>
+        <span class="s1">self.color = CYAN</span>
+
+    <span class="s2">def </span><span class="s1">find_path(self):</span>
+        <span class="s1">self.color = PURPLE</span>
+
+    <span class="s2">def </span><span class="s1">draw(self</span><span class="s2">, </span><span class="s1">win):</span>
+        <span class="s1">pygame.draw.rect(win</span><span class="s2">, </span><span class="s1">self.color</span><span class="s2">, </span><span class="s1">(self.x</span><span class="s2">, </span><span class="s1">self.y</span><span class="s2">, </span><span class="s1">self.width</span><span class="s2">, </span><span class="s1">self.width))</span>
+
+    <span class="s2">def </span><span class="s1">update_adjacent(self</span><span class="s2">, </span><span class="s1">grid):</span>
+        <span class="s1">self.adjacent = []</span>
+        <span class="s2">if </span><span class="s1">self.row &lt; self.row_num - </span><span class="s3">1 </span><span class="s2">and not </span><span class="s1">grid[self.row + </span><span class="s3">1</span><span class="s1">][self.col].is_wall(): </span><span class="s0">#DOWN</span>
+            <span class="s1">self.adjacent.append(grid[self.row + </span><span class="s3">1</span><span class="s1">][self.col])</span>
+
+        <span class="s2">if </span><span class="s1">self.row &gt; </span><span class="s3">0 </span><span class="s2">and not </span><span class="s1">grid[self.row - </span><span class="s3">1</span><span class="s1">][self.col].is_wall(): </span><span class="s0">#UP</span>
+            <span class="s1">self.adjacent.append(grid[self.row - </span><span class="s3">1</span><span class="s1">][self.col])</span>
+
+        <span class="s2">if </span><span class="s1">self.col &lt; self.row_num - </span><span class="s3">1 </span><span class="s2">and not </span><span class="s1">grid[self.row][self.col + </span><span class="s3">1</span><span class="s1">].is_wall(): </span><span class="s0">#RIGHT</span>
+            <span class="s1">self.adjacent.append(grid[self.row][self.col + </span><span class="s3">1</span><span class="s1">])</span>
+
+        <span class="s2">if </span><span class="s1">self.row &gt; </span><span class="s3">0 </span><span class="s2">and not </span><span class="s1">grid[self.row][self.col - </span><span class="s3">1</span><span class="s1">].is_wall(): </span><span class="s0">#LEFT</span>
+            <span class="s1">self.adjacent.append(grid[self.row][self.col - </span><span class="s3">1</span><span class="s1">])</span>
+
+    <span class="s2">def </span><span class="s1">__lt__(self</span><span class="s2">, </span><span class="s1">other):</span>
+        <span class="s2">return False</span>
+
+<span class="s2">def </span><span class="s1">h(p1</span><span class="s2">, </span><span class="s1">p2):</span>
+    <span class="s1">x1</span><span class="s2">, </span><span class="s1">y1 = p1</span>
+    <span class="s1">x2</span><span class="s2">, </span><span class="s1">y2 = p2</span>
+    <span class="s2">return </span><span class="s1">abs(x1 - x2) + abs(y1 - y2)</span>
+
+<span class="s2">def </span><span class="s1">build_grid(rows</span><span class="s2">, </span><span class="s1">width):</span>
+    <span class="s1">grid = []</span>
+    <span class="s1">gap = width // rows</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(rows):</span>
+        <span class="s1">grid.append([])</span>
+        <span class="s2">for </span><span class="s1">j </span><span class="s2">in </span><span class="s1">range(rows):</span>
+            <span class="s1">square = Square(i</span><span class="s2">, </span><span class="s1">j</span><span class="s2">, </span><span class="s1">gap</span><span class="s2">, </span><span class="s1">rows)</span>
+            <span class="s1">grid[i].append(square)</span>
+
+    <span class="s2">return </span><span class="s1">grid</span>
+
+<span class="s2">def </span><span class="s1">draw_grid(win</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width):</span>
+    <span class="s1">gap = width // rows</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(rows):</span>
+        <span class="s1">pygame.draw.line(win</span><span class="s2">, </span><span class="s1">GREY</span><span class="s2">, </span><span class="s1">(</span><span class="s3">0</span><span class="s2">, </span><span class="s1">i * gap)</span><span class="s2">, </span><span class="s1">(width</span><span class="s2">, </span><span class="s1">i * gap))</span>
+        <span class="s2">for </span><span class="s1">j </span><span class="s2">in </span><span class="s1">range(rows):</span>
+            <span class="s1">pygame.draw.line(win</span><span class="s2">, </span><span class="s1">GREY</span><span class="s2">, </span><span class="s1">(j * gap</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span><span class="s2">, </span><span class="s1">(j * gap</span><span class="s2">, </span><span class="s1">width))</span>
+
+<span class="s2">def </span><span class="s1">draw(win</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width):</span>
+    <span class="s1">win.fill(BLACK)</span>
+
+    <span class="s2">for </span><span class="s1">row </span><span class="s2">in </span><span class="s1">grid:</span>
+        <span class="s2">for </span><span class="s1">square </span><span class="s2">in </span><span class="s1">row:</span>
+            <span class="s1">square.draw(win)</span>
+
+    <span class="s1">draw_grid(win</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width)</span>
+    <span class="s1">pygame.display.update()</span>
+
+<span class="s2">def </span><span class="s1">get_clicked_pos(pos</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width):</span>
+    <span class="s1">gap = width // rows</span>
+    <span class="s1">y</span><span class="s2">, </span><span class="s1">x = pos</span>
+
+    <span class="s1">row = y // gap</span>
+    <span class="s1">col = x // gap</span>
+    <span class="s2">return </span><span class="s1">row</span><span class="s2">, </span><span class="s1">col</span>
+
+<span class="s2">def </span><span class="s1">display_path(source</span><span class="s2">, </span><span class="s1">current</span><span class="s2">, </span><span class="s1">win</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width):</span>
+    <span class="s2">while </span><span class="s1">current </span><span class="s2">in </span><span class="s1">source:</span>
+        <span class="s1">current = source[current]</span>
+        <span class="s1">current.find_path()</span>
+        <span class="s1">draw(win</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width)</span>
+
+<span class="s2">def </span><span class="s1">algorithm(win</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">start</span><span class="s2">, </span><span class="s1">goal):</span>
+    <span class="s1">count = </span><span class="s3">0</span>
+    <span class="s1">open_list = PriorityQueue()</span>
+    <span class="s1">open_list.put((</span><span class="s3">0</span><span class="s2">, </span><span class="s1">count</span><span class="s2">, </span><span class="s1">start))</span>
+    <span class="s1">source = {}</span>
+    <span class="s1">g_score = {square: float(</span><span class="s4">&quot;inf&quot;</span><span class="s1">) </span><span class="s2">for </span><span class="s1">row </span><span class="s2">in </span><span class="s1">grid </span><span class="s2">for </span><span class="s1">square </span><span class="s2">in </span><span class="s1">row}</span>
+    <span class="s1">g_score[start] = </span><span class="s3">0</span>
+    <span class="s1">f_score = {square: float(</span><span class="s4">&quot;inf&quot;</span><span class="s1">) </span><span class="s2">for </span><span class="s1">row </span><span class="s2">in </span><span class="s1">grid </span><span class="s2">for </span><span class="s1">square </span><span class="s2">in </span><span class="s1">row}</span>
+    <span class="s1">f_score[start] = h(start.get_pos()</span><span class="s2">, </span><span class="s1">goal.get_pos())</span>
+
+    <span class="s1">hash_open_list = {start}</span>
+
+    <span class="s2">while not </span><span class="s1">open_list.empty():</span>
+        <span class="s2">for </span><span class="s1">event </span><span class="s2">in </span><span class="s1">pygame.event.get():</span>
+            <span class="s2">if </span><span class="s1">event.type == pygame.QUIT:</span>
+                <span class="s1">pygame.quit()</span>
+
+        <span class="s1">current = open_list.get()[</span><span class="s3">2</span><span class="s1">]</span>
+        <span class="s1">hash_open_list.remove(current)</span>
+
+        <span class="s2">if </span><span class="s1">current == goal:</span>
+            <span class="s1">display_path(source</span><span class="s2">, </span><span class="s1">goal</span><span class="s2">, </span><span class="s1">win</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width)</span>
+            <span class="s1">start.make_start()</span>
+            <span class="s1">goal.make_end()</span>
+            <span class="s2">return True</span>
+        <span class="s2">for </span><span class="s1">adjacent </span><span class="s2">in </span><span class="s1">current.adjacent:</span>
+            <span class="s1">hold_g_score = g_score[current] + </span><span class="s3">1</span>
+
+            <span class="s2">if </span><span class="s1">hold_g_score &lt; g_score[adjacent]:</span>
+                <span class="s1">source[adjacent] = current</span>
+                <span class="s1">g_score[adjacent] = hold_g_score</span>
+                <span class="s1">f_score[adjacent] = hold_g_score + h(adjacent.get_pos()</span><span class="s2">, </span><span class="s1">goal.get_pos())</span>
+                <span class="s2">if </span><span class="s1">adjacent </span><span class="s2">not in </span><span class="s1">hash_open_list:</span>
+                    <span class="s1">count += </span><span class="s3">1</span>
+                    <span class="s1">open_list.put((f_score[adjacent]</span><span class="s2">, </span><span class="s1">count</span><span class="s2">, </span><span class="s1">adjacent))</span>
+                    <span class="s1">hash_open_list.add(adjacent)</span>
+                    <span class="s1">adjacent.open()</span>
+
+        <span class="s1">draw(win</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">rows</span><span class="s2">, </span><span class="s1">width)</span>
+
+        <span class="s2">if </span><span class="s1">current != start:</span>
+            <span class="s1">current.close()</span>
+
+    <span class="s2">return False</span>
+
+
+
+<span class="s2">def </span><span class="s1">main(win</span><span class="s2">, </span><span class="s1">width):</span>
+    <span class="s1">ROWS = </span><span class="s3">50</span>
+    <span class="s1">grid = build_grid(ROWS</span><span class="s2">, </span><span class="s1">width)</span>
+
+    <span class="s1">start = </span><span class="s2">None</span>
+    <span class="s1">goal = </span><span class="s2">None</span>
+
+    <span class="s1">run = </span><span class="s2">True</span>
+    <span class="s1">started = </span><span class="s2">False</span>
+    <span class="s2">while </span><span class="s1">run:</span>
+        <span class="s1">draw(win</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">ROWS</span><span class="s2">, </span><span class="s1">width)</span>
+        <span class="s2">for </span><span class="s1">event </span><span class="s2">in </span><span class="s1">pygame.event.get():</span>
+            <span class="s2">if </span><span class="s1">event.type == pygame.QUIT:</span>
+                <span class="s1">run = </span><span class="s2">False</span>
+
+            <span class="s2">if </span><span class="s1">pygame.mouse.get_pressed()[</span><span class="s3">0</span><span class="s1">]: </span><span class="s0">#Left click</span>
+                <span class="s1">pos = pygame.mouse.get_pos()</span>
+                <span class="s1">row</span><span class="s2">, </span><span class="s1">col = get_clicked_pos(pos</span><span class="s2">, </span><span class="s1">ROWS</span><span class="s2">, </span><span class="s1">width)</span>
+                <span class="s1">square = grid[row][col]</span>
+                <span class="s2">if not </span><span class="s1">start </span><span class="s2">and </span><span class="s1">square != goal:</span>
+                    <span class="s1">start = square</span>
+                    <span class="s1">start.make_start()</span>
+                <span class="s2">elif not </span><span class="s1">goal </span><span class="s2">and </span><span class="s1">square != start:</span>
+                    <span class="s1">goal = square</span>
+                    <span class="s1">goal.make_end()</span>
+                <span class="s2">elif </span><span class="s1">square != goal </span><span class="s2">and </span><span class="s1">square != start:</span>
+                    <span class="s1">square.build_wall()</span>
+
+            <span class="s2">elif </span><span class="s1">pygame.mouse.get_pressed()[</span><span class="s3">2</span><span class="s1">]: </span><span class="s0">#Right click</span>
+                <span class="s1">pos = pygame.mouse.get_pos()</span>
+                <span class="s1">row</span><span class="s2">, </span><span class="s1">col = get_clicked_pos(pos</span><span class="s2">, </span><span class="s1">ROWS</span><span class="s2">, </span><span class="s1">width)</span>
+                <span class="s1">square = grid[row][col]</span>
+                <span class="s1">square.restart()</span>
+                <span class="s2">if </span><span class="s1">square == start:</span>
+                    <span class="s1">start = </span><span class="s2">None</span>
+                <span class="s2">if </span><span class="s1">square == goal:</span>
+                    <span class="s1">goal = </span><span class="s2">None</span>
+
+            <span class="s2">if </span><span class="s1">event.type == pygame.KEYDOWN:</span>
+                <span class="s2">if </span><span class="s1">event.key == pygame.K_SPACE </span><span class="s2">and </span><span class="s1">start </span><span class="s2">and </span><span class="s1">goal:</span>
+                    <span class="s2">for </span><span class="s1">row </span><span class="s2">in </span><span class="s1">grid:</span>
+                        <span class="s2">for </span><span class="s1">square </span><span class="s2">in </span><span class="s1">row:</span>
+                            <span class="s1">square.update_adjacent(grid)</span>
+                    <span class="s1">algorithm(win</span><span class="s2">, </span><span class="s1">ROWS</span><span class="s2">, </span><span class="s1">width</span><span class="s2">, </span><span class="s1">grid</span><span class="s2">, </span><span class="s1">start</span><span class="s2">, </span><span class="s1">goal)</span>
+
+                <span class="s2">if </span><span class="s1">event.key == pygame.K_r:</span>
+                    <span class="s1">start = </span><span class="s2">None</span>
+                    <span class="s1">goal = </span><span class="s2">None</span>
+                    <span class="s1">grid = build_grid(ROWS</span><span class="s2">, </span><span class="s1">width)</span>
+
+    <span class="s1">pygame.quit()</span>
+
+<span class="s1">main(WIN</span><span class="s2">, </span><span class="s1">STD_WIDTH)</span>
+</pre>
+</body>
+</html>
